@@ -1,0 +1,32 @@
+Global:
+  model_name: PP-OCRv5_server_rec
+  use_gpu: false
+  epoch_num: 1
+  infer_img: doc/imgs_words_en/word_10.png
+  save_inference_dir: ./inference
+  use_tensorrt: false
+  use_fp16: false
+  enable_mkldnn: false
+  cpu_threads: 4
+  device: cpu
+  ir_optim: true
+  benchmark: false
+  save_log_path: ./log_output/
+  character_dict_path: ./ppocr/utils/en_dict.txt
+  use_space_char: True
+  max_text_length: 25
+  use_angle_cls: False
+
+PreProcess:
+  transform_ops:
+    - RecResizeImg:
+        image_shape: [3, 48, 320]
+    - KeepKeys:
+        keep_keys: ["image", "label", "length"]
+
+PostProcess:
+  character_dict_path: ./ppocr/utils/en_dict.txt
+  character_type: en
+  use_space_char: true
+  max_text_length: 25
+  name: CTCLabelDecode

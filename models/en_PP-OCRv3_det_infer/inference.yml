@@ -1,0 +1,37 @@
+Global:
+  model_name: PP-OCRv5_server_det
+  use_gpu: false
+  epoch_num: 1
+  infer_img: doc/imgs_en/img_10.jpg
+  save_inference_dir: ./inference
+  use_tensorrt: false
+  use_fp16: false
+  enable_mkldnn: false
+  cpu_threads: 4
+  device: cpu
+  ir_optim: true
+  benchmark: false
+  save_log_path: ./log_output/
+
+PreProcess:
+  transform_ops:
+    - DetResizeForTest:
+        limit_side_len: 960
+        limit_type: max
+    - NormalizeImage:
+        std: [0.229, 0.224, 0.225]
+        mean: [0.485, 0.456, 0.406]
+        scale: 1./255.
+        order: "hwc"
+    - ToCHWImage:
+    - KeepKeys:
+        keep_keys: ["image", "shape"]
+
+PostProcess:
+  name: DBPostProcess # ✅ Required key!
+  post_process_class: DBPostProcess
+  thresh: 0.3
+  box_thresh: 0.6
+  unclip_ratio: 1.5
+  max_candidates: 1000
+  use_dilation: false

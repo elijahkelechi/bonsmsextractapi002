@@ -1,0 +1,23 @@
+# Ignore virtual environments
+venv/
+
+# Ignore Python cache
+__pycache__/
+*.py[cod]
+
+# Ignore macOS system files
+.DS_Store
+
+# Ignore environment files (if any)
+.env
+
+# Ignore model weights/checkpoints if applicable
+*.h5
+*.ckpt
+*.pth
+*.pt
+*.pb
+
+# Ignore any editor/IDE settings
+.vscode/
+.idea/
