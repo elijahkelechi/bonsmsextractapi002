@@ -50,11 +50,9 @@ async def extract_nigerian_numbers(file: UploadFile = File(...)):
         # Preprocess image
         gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)  # Convert to grayscale
         blurred_img = cv2.GaussianBlur(gray_img, (5, 5), 0)  # Reduce noise
-        # Skip binarization for now, test contrast only
         contrast_img = cv2.convertScaleAbs(blurred_img, alpha=1.2, beta=20)  # Adjust contrast
         contrast_img = cv2.cvtColor(contrast_img, cv2.COLOR_GRAY2BGR)  # Convert to 3-channel BGR
 
-        # Check if preprocessed image is empty
         if contrast_img.size == 0:
             logger.error("Preprocessed image is empty.")
             return JSONResponse(status_code=400, content={"error": "Preprocessed image is empty."})
@@ -64,10 +62,10 @@ async def extract_nigerian_numbers(file: UploadFile = File(...)):
         # Perform OCR on preprocessed image
         logger.debug("Running OCR on preprocessed image...")
         ocr_results = ocr_model.ocr(contrast_img)
+        print("RAW OCR RESULTS >>>", ocr_results)
         logger.debug(f"OCR raw result type: {type(ocr_results)}, length: {len(ocr_results)}")
         logger.debug(f"OCR raw result content: {ocr_results}")
 
-        # Handle empty or invalid OCR results
         if not ocr_results or not isinstance(ocr_results, list):
             logger.warning("No text detected in OCR results.")
             return {"extracted_phone_numbers": []}
@@ -75,22 +73,24 @@ async def extract_nigerian_numbers(file: UploadFile = File(...)):
         # Extract Nigerian phone numbers
         extracted_numbers = []
         for page in ocr_results:
-            if isinstance(page, dict) and 'rec_texts' in page and 'rec_scores' in page:
-                for text, score in zip(page['rec_texts'], page['rec_scores']):
-                    # Clean text: remove spaces, dashes, parentheses, dots, slashes, commas, colons, quotes, brackets
-                    cleaned_text = re.sub(r'[\s\-\(\)\./,:\'"\[\]]+', '', text)
-                    logger.debug(f"Cleaned text: {text} -> {cleaned_text}, confidence: {score}")
+            for entry in page:
+                if len(entry) != 2:
+                    continue
+                _, (text, score) = entry
 
-                    # Validate cleaned text as a 10-11 digit Nigerian phone number
-                    if re.match(nigerian_phone_pattern, cleaned_text) and 10 <= len(cleaned_text) <= 11:
-                        extracted_numbers.append(cleaned_text)
-                        logger.debug(f"Accepted: {cleaned_text}")
+                # Clean text
+                cleaned_text = re.sub(r'[\s\-\(\)\./,:\'"\[\]]+', '', text)
+                logger.debug(f"Cleaned text: {text} -> {cleaned_text}, confidence: {score}")
+
+                # Extract phone number candidates
+                candidates = re.findall(r'(?:\+234|0)\d{9,10}', cleaned_text)
+                for number in candidates:
+                    if re.match(nigerian_phone_pattern, number) and 10 <= len(number[-11:]) <= 11:
+                        extracted_numbers.append(number)
+                        logger.debug(f"Accepted: {number}")
                     else:
-                        logger.debug(f"Rejected: {cleaned_text} (not a valid 10-11 digit phone number)")
-            else:
-                logger.warning("Unexpected OCR result format")
+                        logger.debug(f"Rejected: {number} (not a valid Nigerian phone number)")
 
-        # Truncate or warn if not 30 numbers
         if len(extracted_numbers) < 30:
             logger.warning(f"Only {len(extracted_numbers)} phone numbers extracted, expected 30")
         elif len(extracted_numbers) > 30:
