@@ -4,3 +4,6 @@ python-multipart==0.0.9
 paddleocr==2.7.0.3
 opencv-python-headless==4.6.0.66
 numpy==1.23.5
+setuptools>=65.5.0
+wheel
+cython
